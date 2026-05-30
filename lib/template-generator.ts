@@ -133,7 +133,7 @@ import { useCurrentFrame, useVideoConfig, spring, interpolate } from 'remotion';
 // Art: ${t.artStyle} · Entrance: ${t.entrance} · Camera: ${t.camera} · Lighting: ${t.lighting}
 const ELEMENTS = ${elementsJson};
 
-export const VibeGraphic: React.FC = () => {
+export const ClavieraScene: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
   const t = frame * ${speed.toFixed(2)};

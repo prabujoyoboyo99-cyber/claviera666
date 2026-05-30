@@ -20,7 +20,7 @@ function pickComponent(exports: Record<string, unknown>): {
   name: string
 } | null {
   // Prefer a conventional named export, then default, then first function export.
-  const preferred = ["VibeGraphic", "Main", "MyComposition", "Composition"]
+  const preferred = ["ClavieraScene", "VibeGraphic", "Main", "MyComposition", "Composition"]
   for (const key of preferred) {
     if (typeof exports[key] === "function") {
       return { Component: exports[key] as React.ComponentType, name: key }
@@ -67,7 +67,7 @@ export function compileComposition(code: string): CompileResult {
     if (!picked) {
       return {
         ok: false,
-        error: "No React component export found. Export a component (e.g. `export const VibeGraphic`).",
+        error: "No React component export found. Export a component (e.g. `export const ClavieraScene`).",
       }
     }
     return { ok: true, Component: picked.Component, name: picked.name }

@@ -7,8 +7,8 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Vibe Motion Pro — Motion Graphic Generator',
-  description: 'Code, preview, and generate Remotion motion graphics with AI templates.',
+  title: 'Claviera Motion — Motion Graphic Generator',
+  description: 'Code, preview, and render Remotion motion graphics to MP4.',
   generator: 'v0.app',
   icons: {
     icon: [

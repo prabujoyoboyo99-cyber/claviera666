@@ -113,7 +113,7 @@ export function TemplatePanel({ settings, onApply }: Props) {
               <Input
                 value={t.palette}
                 onChange={(e) => set({ palette: e.target.value })}
-                placeholder="#7c3aed, #22d3ee"
+                placeholder="#22d3ee, #2dd4bf"
                 className="h-9 bg-input/60 text-sm"
               />
               <Button

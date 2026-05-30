@@ -1,7 +1,7 @@
 export const DEFAULT_CODE = `import React from 'react';
 import { useCurrentFrame, useVideoConfig, spring, interpolate } from 'remotion';
 
-export const VibeGraphic: React.FC = () => {
+export const ClavieraScene: React.FC = () => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
 
@@ -117,7 +117,7 @@ export const VibeGraphic: React.FC = () => {
             transform: \`translateX(\${(1 - logoProgress) * 20}px)\`,
           }}
         >
-          VIBE
+          CLAVIERA
         </div>
       </div>
     </div>
