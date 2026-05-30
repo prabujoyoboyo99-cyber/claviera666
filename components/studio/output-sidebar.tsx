@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef } from "react"
-import { FileUp, Sparkles, SlidersHorizontal, FolderOpen, FolderCheck, Download } from "lucide-react"
+import { FileUp, Clapperboard, SlidersHorizontal, FolderOpen, FolderCheck, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -21,22 +21,12 @@ import { pickOutputDirectory, supportsDirectoryPicker, type DirHandle } from "@/
 type Props = {
   settings: OutputSettings
   onChange: (next: Partial<OutputSettings>) => void
-  generateCount: number
-  onGenerateCountChange: (n: number) => void
   outputDir: DirHandle | null
   onOutputDirChange: (dir: DirHandle | null) => void
   onImportClips: (clips: Clip[]) => void
 }
 
-export function OutputSidebar({
-  settings,
-  onChange,
-  generateCount,
-  onGenerateCountChange,
-  outputDir,
-  onOutputDirChange,
-  onImportClips,
-}: Props) {
+export function OutputSidebar({ settings, onChange, outputDir, onOutputDirChange, onImportClips }: Props) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const canPickFolder = supportsDirectoryPicker()
 
@@ -56,26 +46,19 @@ export function OutputSidebar({
   return (
     <aside className="flex h-full w-72 flex-col border-r border-border bg-sidebar">
       {/* Brand */}
-      <div className="border-b border-border px-5 py-4">
-        <div className="flex items-center gap-2">
-          <div className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Sparkles className="size-4" />
-          </div>
-          <div>
-            <h1 className="text-sm font-semibold leading-tight text-foreground">Vibe Motion Pro</h1>
-            <p className="text-[11px] leading-tight text-muted-foreground">Motion Graphic Generator</p>
-          </div>
+      <div className="flex items-center gap-2.5 border-b border-border px-5 py-4">
+        <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <Clapperboard className="size-4.5" />
+        </div>
+        <div>
+          <h1 className="text-sm font-semibold leading-tight tracking-tight text-foreground">Claviera Motion</h1>
+          <p className="text-[11px] leading-tight text-muted-foreground">Motion Graphic Generator</p>
         </div>
       </div>
 
-      {/* Language + file pick */}
-      <div className="space-y-3 border-b border-border px-5 py-4">
-        <LabeledSelect
-          label="Language"
-          value="English"
-          onValueChange={() => {}}
-          options={["English", "Bahasa Indonesia", "Español", "日本語"]}
-        />
+      {/* Import sources */}
+      <div className="space-y-2.5 border-b border-border px-5 py-4">
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Source</div>
         <input
           ref={fileInputRef}
           type="file"
@@ -91,13 +74,13 @@ export function OutputSidebar({
           onClick={() => fileInputRef.current?.click()}
         >
           <FileUp className="size-4" />
-          Select File(s) Manually
+          Import Code File(s)
         </Button>
       </div>
 
       {/* Output folder */}
       <div className="space-y-2 border-b border-border px-5 py-4">
-        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-foreground">
+        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           <FolderOpen className="size-3.5 text-primary" />
           Output Folder
         </div>
@@ -127,13 +110,13 @@ export function OutputSidebar({
       {/* Output settings */}
       <ScrollArea className="flex-1">
         <div className="px-5 py-4">
-          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-foreground">
+          <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             <SlidersHorizontal className="size-3.5 text-primary" />
             Output Settings
           </div>
           <div className="space-y-3">
             <LabeledSelect
-              label="Remotion Resolution"
+              label="Resolution"
               value={RESOLUTIONS[settings.resolutionIndex].label}
               onValueChange={(label) =>
                 onChange({ resolutionIndex: RESOLUTIONS.findIndex((r) => r.label === label) })
@@ -170,13 +153,13 @@ export function OutputSidebar({
               />
             </div>
             <LabeledSelect
-              label="Hardware Acceleration (Render)"
+              label="Hardware Acceleration"
               value={settings.hardware}
               onValueChange={(v) => onChange({ hardware: v })}
               options={HARDWARE_ACCEL}
             />
             <LabeledSelect
-              label="Render Concurrency (Performance)"
+              label="Render Concurrency"
               value={settings.concurrency}
               onValueChange={(v) => onChange({ concurrency: v })}
               options={CONCURRENCY}
@@ -184,25 +167,6 @@ export function OutputSidebar({
           </div>
         </div>
       </ScrollArea>
-
-      {/* Footer generate */}
-      <div className="border-t border-border px-5 py-4">
-        <div className="mb-3">
-          <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Generate Count</label>
-          <Input
-            type="number"
-            min={1}
-            max={50}
-            value={generateCount}
-            onChange={(e) => onGenerateCountChange(Math.max(1, Number.parseInt(e.target.value) || 1))}
-            className="h-9 w-24 bg-input/60 text-sm"
-          />
-        </div>
-        <Button className="w-full justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-          <Sparkles className="size-4" />
-          Generate Typescript
-        </Button>
-      </div>
     </aside>
   )
 }

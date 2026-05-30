@@ -17,7 +17,7 @@ export function createClip(name: string, code: string): Clip {
 }
 
 export function defaultClips(): Clip[] {
-  return [createClip("VibeGraphic", DEFAULT_CODE)]
+  return [createClip("ClavieraScene", DEFAULT_CODE)]
 }
 
 /** Strip extension + unsafe chars so a clip name can become a filename. */

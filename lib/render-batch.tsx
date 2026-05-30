@@ -4,7 +4,7 @@ import React from "react"
 import { createRoot } from "react-dom/client"
 import { Player, type PlayerRef } from "@remotion/player"
 import { compileComposition } from "./compile-composition"
-import { captureToBlob } from "./render-client"
+import { captureToBlob, type CaptureResult } from "./render-client"
 import { saveBlob, type DirHandle } from "./fs-access"
 import { sanitizeName, type Clip } from "./clips"
 
@@ -36,12 +36,12 @@ const waitForMount = (ref: React.RefObject<PlayerRef | null>) =>
     requestAnimationFrame(check)
   })
 
-/** Render a single clip offscreen into a WebM blob. */
+/** Render a single clip offscreen into a video blob (MP4 when supported). */
 async function renderClipToBlob(
   clip: Clip,
   opts: BatchOptions,
   onProgress: (percent: number) => void,
-): Promise<Blob> {
+): Promise<CaptureResult> {
   const compiled = compileComposition(clip.code)
   if (!compiled.ok) throw new Error(compiled.error)
 
@@ -76,6 +76,8 @@ async function renderClipToBlob(
       node: host,
       durationInFrames: opts.durationInFrames,
       fps: opts.fps,
+      width: opts.width,
+      height: opts.height,
       onProgress,
     })
   } finally {
@@ -96,18 +98,18 @@ export async function renderClips(
 
   for (let i = 0; i < total; i++) {
     const clip = clips[i]
-    let fileName = `${sanitizeName(clip.name)}.webm`
-    // avoid overwriting clips that share a name
-    let n = 2
-    while (used.has(fileName)) {
-      fileName = `${sanitizeName(clip.name)}_${n++}.webm`
-    }
-    used.add(fileName)
-
     try {
-      const blob = await renderClipToBlob(clip, opts, (percent) =>
+      const { blob, ext } = await renderClipToBlob(clip, opts, (percent) =>
         onProgress({ index: i, total, clipName: clip.name, percent }),
       )
+      // avoid overwriting clips that share a name
+      let fileName = `${sanitizeName(clip.name)}.${ext}`
+      let n = 2
+      while (used.has(fileName)) {
+        fileName = `${sanitizeName(clip.name)}_${n++}.${ext}`
+      }
+      used.add(fileName)
+
       const where = await saveBlob(blob, fileName, opts.dir)
       results.push({
         clipName: clip.name,
@@ -117,7 +119,7 @@ export async function renderClips(
     } catch (err) {
       results.push({
         clipName: clip.name,
-        fileName,
+        fileName: sanitizeName(clip.name),
         status: "error",
         error: (err as Error).message,
       })

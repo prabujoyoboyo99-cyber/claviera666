@@ -76,7 +76,7 @@ async function createWindow() {
     backgroundColor: "#0a0a0a",
     show: false,
     autoHideMenuBar: true,
-    title: "Vibe Motion Pro",
+    title: "Claviera Motion",
     icon: path.join(__dirname, "icon.png"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
