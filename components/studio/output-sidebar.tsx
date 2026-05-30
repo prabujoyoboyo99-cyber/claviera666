@@ -1,6 +1,7 @@
 "use client"
 
-import { FileUp, Sparkles, SlidersHorizontal } from "lucide-react"
+import { useRef } from "react"
+import { FileUp, Sparkles, SlidersHorizontal, FolderOpen, FolderCheck, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -14,15 +15,44 @@ import {
   CONCURRENCY,
   type OutputSettings,
 } from "@/lib/studio-options"
+import { filesToClips, type Clip } from "@/lib/clips"
+import { pickOutputDirectory, supportsDirectoryPicker, type DirHandle } from "@/lib/fs-access"
 
 type Props = {
   settings: OutputSettings
   onChange: (next: Partial<OutputSettings>) => void
   generateCount: number
   onGenerateCountChange: (n: number) => void
+  outputDir: DirHandle | null
+  onOutputDirChange: (dir: DirHandle | null) => void
+  onImportClips: (clips: Clip[]) => void
 }
 
-export function OutputSidebar({ settings, onChange, generateCount, onGenerateCountChange }: Props) {
+export function OutputSidebar({
+  settings,
+  onChange,
+  generateCount,
+  onGenerateCountChange,
+  outputDir,
+  onOutputDirChange,
+  onImportClips,
+}: Props) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const canPickFolder = supportsDirectoryPicker()
+
+  const handlePickFolder = async () => {
+    const dir = await pickOutputDirectory()
+    if (dir) onOutputDirChange(dir)
+  }
+
+  const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    const clips = await filesToClips(files)
+    onImportClips(clips)
+    e.target.value = ""
+  }
+
   return (
     <aside className="flex h-full w-72 flex-col border-r border-border bg-sidebar">
       {/* Brand */}
@@ -46,10 +76,52 @@ export function OutputSidebar({ settings, onChange, generateCount, onGenerateCou
           onValueChange={() => {}}
           options={["English", "Bahasa Indonesia", "Español", "日本語"]}
         />
-        <Button variant="secondary" size="sm" className="w-full justify-center gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".txt,.tsx,.ts,.jsx,.js"
+          multiple
+          className="hidden"
+          onChange={handleFiles}
+        />
+        <Button
+          variant="secondary"
+          size="sm"
+          className="w-full justify-center gap-2"
+          onClick={() => fileInputRef.current?.click()}
+        >
           <FileUp className="size-4" />
-          Select File Manually
+          Select File(s) Manually
         </Button>
+      </div>
+
+      {/* Output folder */}
+      <div className="space-y-2 border-b border-border px-5 py-4">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-foreground">
+          <FolderOpen className="size-3.5 text-primary" />
+          Output Folder
+        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="w-full justify-center gap-2"
+          onClick={handlePickFolder}
+          disabled={!canPickFolder}
+        >
+          <FolderOpen className="size-4" />
+          {outputDir ? "Change Folder" : "Choose Render Folder"}
+        </Button>
+        {outputDir ? (
+          <div className="flex items-center gap-2 rounded-md bg-success/10 px-2.5 py-1.5 text-[11px] text-success">
+            <FolderCheck className="size-3.5 shrink-0" />
+            <span className="truncate">Saving to: {outputDir.name}</span>
+          </div>
+        ) : (
+          <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <Download className="size-3" />
+            {canPickFolder ? "No folder set — renders will download." : "Folder picker unsupported — renders download."}
+          </p>
+        )}
       </div>
 
       {/* Output settings */}

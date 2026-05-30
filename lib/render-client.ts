@@ -3,7 +3,7 @@
 import type { RefObject } from "react"
 import type { PlayerRef } from "@remotion/player"
 
-type RenderArgs = {
+type CaptureArgs = {
   playerRef: RefObject<PlayerRef | null>
   node: HTMLElement
   durationInFrames: number
@@ -16,11 +16,10 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 /**
  * Best-effort client-side render. Steps the Remotion player frame by frame,
- * snapshots the DOM to a canvas, and records it to a WebM file that downloads
- * to the user's machine. (True multi-codec MP4 export requires the desktop
- * build with @remotion/renderer.)
+ * snapshots the DOM to a canvas, and records it to a WebM blob. (True
+ * multi-codec MP4 export requires the desktop build with @remotion/renderer.)
  */
-export async function renderToWebM({ playerRef, node, durationInFrames, fps, onProgress }: RenderArgs) {
+export async function captureToBlob({ playerRef, node, durationInFrames, fps, onProgress }: CaptureArgs): Promise<Blob> {
   const { toCanvas } = await import("html-to-image")
 
   const rect = node.getBoundingClientRect()
@@ -67,13 +66,5 @@ export async function renderToWebM({ playerRef, node, durationInFrames, fps, onP
   recorder.stop()
   await stopped
 
-  const blob = new Blob(chunks, { type: "video/webm" })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = `vibe-motion-${Date.now()}.webm`
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
+  return new Blob(chunks, { type: "video/webm" })
 }

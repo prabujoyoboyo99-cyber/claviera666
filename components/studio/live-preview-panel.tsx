@@ -21,12 +21,17 @@ import {
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { RemotionPreview } from "./remotion-preview"
-import { renderToWebM } from "@/lib/render-client"
+import { captureToBlob } from "@/lib/render-client"
+import { renderClips, type BatchProgress } from "@/lib/render-batch"
+import { saveBlob, type DirHandle } from "@/lib/fs-access"
+import { sanitizeName, type Clip } from "@/lib/clips"
 import { RESOLUTIONS, type OutputSettings } from "@/lib/studio-options"
 
 type Props = {
   code: string
   settings: OutputSettings
+  clips: Clip[]
+  outputDir: DirHandle | null
 }
 
 function formatTime(frame: number, fps: number) {
@@ -37,7 +42,7 @@ function formatTime(frame: number, fps: number) {
   return `${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}.${String(ff).padStart(2, "0")}`
 }
 
-export function LivePreviewPanel({ code, settings }: Props) {
+export function LivePreviewPanel({ code, settings, clips, outputDir }: Props) {
   const res = RESOLUTIONS[settings.resolutionIndex]
   const durationInFrames = Math.max(1, settings.durationSeconds * settings.fps)
 
@@ -47,6 +52,7 @@ export function LivePreviewPanel({ code, settings }: Props) {
   const [playing, setPlaying] = useState(false)
   const [rendering, setRendering] = useState(false)
   const [renderProgress, setRenderProgress] = useState(0)
+  const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null)
 
   useEffect(() => {
     const player = playerRef.current
@@ -76,20 +82,46 @@ export function LivePreviewPanel({ code, settings }: Props) {
     setRenderProgress(0)
     try {
       playerRef.current?.pause()
-      await renderToWebM({
+      const blob = await captureToBlob({
         playerRef,
         node: containerRef.current,
         durationInFrames,
         fps: settings.fps,
         onProgress: setRenderProgress,
       })
+      await saveBlob(blob, `vibe-motion-${sanitizeName(clips[0]?.name ?? "clip")}-${Date.now()}.webm`, outputDir)
     } catch (err) {
       console.log("[v0] render error:", (err as Error).message)
     } finally {
       setRendering(false)
       setRenderProgress(0)
     }
-  }, [durationInFrames, settings.fps, rendering])
+  }, [durationInFrames, settings.fps, rendering, clips, outputDir])
+
+  const handleRenderAll = useCallback(async () => {
+    if (rendering || clips.length === 0) return
+    setRendering(true)
+    setBatchProgress({ index: 0, total: clips.length, clipName: clips[0].name, percent: 0 })
+    try {
+      playerRef.current?.pause()
+      await renderClips(
+        clips,
+        {
+          width: res.width,
+          height: res.height,
+          fps: settings.fps,
+          durationInFrames,
+          dir: outputDir,
+        },
+        setBatchProgress,
+      )
+    } catch (err) {
+      console.log("[v0] batch render error:", (err as Error).message)
+    } finally {
+      setRendering(false)
+      setBatchProgress(null)
+    }
+  }, [rendering, clips, res.width, res.height, settings.fps, durationInFrames, outputDir])
 
   return (
     <div className="flex h-full flex-col">
@@ -139,7 +171,18 @@ export function LivePreviewPanel({ code, settings }: Props) {
               {rendering && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
                   <Loader2 className="size-6 animate-spin text-primary" />
-                  <p className="text-sm text-foreground">Rendering on your machine… {renderProgress}%</p>
+                  {batchProgress ? (
+                    <>
+                      <p className="text-sm text-foreground">
+                        Rendering {batchProgress.index + 1} / {batchProgress.total}: {batchProgress.clipName}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {batchProgress.percent}% · {outputDir ? `saving to ${outputDir.name}` : "downloading"}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-foreground">Rendering on your machine… {renderProgress}%</p>
+                  )}
                 </div>
               )}
             </div>
@@ -247,6 +290,14 @@ export function LivePreviewPanel({ code, settings }: Props) {
         >
           <Download className="size-4" />
           Export / Render Video
+        </Button>
+        <Button
+          className="flex-1 gap-2 bg-info text-info-foreground hover:bg-info/90"
+          onClick={handleRenderAll}
+          disabled={rendering || clips.length === 0}
+        >
+          <Film className="size-4" />
+          Render All ({clips.length})
         </Button>
       </div>
     </div>

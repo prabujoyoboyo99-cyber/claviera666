@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Play, Minus, Square, X } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { OutputSidebar } from "./output-sidebar"
@@ -8,23 +8,59 @@ import { CodeEditorPanel } from "./code-editor-panel"
 import { LivePreviewPanel } from "./live-preview-panel"
 import { TemplatePanel } from "./template-panel"
 import { AutoCoderPanel } from "./auto-coder-panel"
-import { DEFAULT_CODE } from "@/lib/default-code"
 import { DEFAULT_SETTINGS, type OutputSettings } from "@/lib/studio-options"
+import { defaultClips, type Clip } from "@/lib/clips"
+import type { DirHandle } from "@/lib/fs-access"
 
 const MENU = ["File", "View", "Tools", "Packages", "Help"]
 
 export function Studio() {
-  const [code, setCode] = useState(DEFAULT_CODE)
+  const [clips, setClips] = useState<Clip[]>(() => defaultClips())
+  const [activeId, setActiveId] = useState<string>(() => clips[0]?.id ?? "")
+  const [outputDir, setOutputDir] = useState<DirHandle | null>(null)
   const [settings, setSettings] = useState<OutputSettings>(DEFAULT_SETTINGS)
   const [tab, setTab] = useState("preview")
   const [generateCount, setGenerateCount] = useState(1)
 
+  const activeClip = useMemo(
+    () => clips.find((c) => c.id === activeId) ?? clips[0],
+    [clips, activeId],
+  )
+
   const updateSettings = (patch: Partial<OutputSettings>) =>
     setSettings((prev) => ({ ...prev, ...patch }))
 
+  // Replace the active clip's code (from editor / template / AI output).
   const applyCode = (next: string) => {
-    setCode(next)
+    setClips((prev) => prev.map((c) => (c.id === activeClip?.id ? { ...c, code: next } : c)))
     setTab("preview")
+  }
+
+  // Append newly imported clips and focus the first one.
+  const importClips = (incoming: Clip[]) => {
+    if (incoming.length === 0) return
+    setClips((prev) => [...prev, ...incoming])
+    setActiveId(incoming[0].id)
+    setTab("code")
+  }
+
+  const removeClip = (id: string) => {
+    setClips((prev) => {
+      const next = prev.filter((c) => c.id !== id)
+      if (next.length === 0) {
+        const seed = defaultClips()
+        setActiveId(seed[0].id)
+        return seed
+      }
+      if (id === activeId) setActiveId(next[0].id)
+      return next
+    })
+  }
+
+  const clearClips = () => {
+    const seed = defaultClips()
+    setClips(seed)
+    setActiveId(seed[0].id)
   }
 
   return (
@@ -48,6 +84,9 @@ export function Studio() {
           onChange={updateSettings}
           generateCount={generateCount}
           onGenerateCountChange={setGenerateCount}
+          outputDir={outputDir}
+          onOutputDirChange={setOutputDir}
+          onImportClips={importClips}
         />
 
         <main className="flex min-w-0 flex-1 flex-col">
@@ -71,10 +110,25 @@ export function Studio() {
             </div>
 
             <TabsContent value="code" className="min-h-0 flex-1 outline-none">
-              <CodeEditorPanel code={code} onApply={applyCode} />
+              <CodeEditorPanel
+                clips={clips}
+                activeId={activeClip?.id ?? ""}
+                settings={settings}
+                outputDir={outputDir}
+                onSelectClip={setActiveId}
+                onApply={applyCode}
+                onImportClips={importClips}
+                onRemoveClip={removeClip}
+                onClearClips={clearClips}
+              />
             </TabsContent>
             <TabsContent value="preview" className="min-h-0 flex-1 outline-none">
-              <LivePreviewPanel code={code} settings={settings} />
+              <LivePreviewPanel
+                code={activeClip?.code ?? ""}
+                settings={settings}
+                clips={clips}
+                outputDir={outputDir}
+              />
             </TabsContent>
             <TabsContent value="template" className="min-h-0 flex-1 outline-none">
               <TemplatePanel settings={settings} onApply={applyCode} />
