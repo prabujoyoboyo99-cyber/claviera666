@@ -2,11 +2,58 @@
   "name": "my-project",
   "version": "0.1.0",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "desktop:dev": "concurrently -k \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "desktop:start": "electron .",
+    "desktop:build": "cross-env BUILD_TARGET=desktop next build",
+    "desktop:build:win": "cross-env BUILD_TARGET=desktop next build && electron-builder --win",
+    "desktop:build:mac": "cross-env BUILD_TARGET=desktop next build && electron-builder --mac",
+    "desktop:build:linux": "cross-env BUILD_TARGET=desktop next build && electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.vibemotion.pro",
+    "productName": "Vibe Motion Pro",
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "out",
+        "to": "out"
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "electron/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.video"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Video"
+    }
   },
   "dependencies": {
     "@babel/standalone": "^7.29.7",
@@ -67,6 +114,11 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.0",
     "@types/babel__standalone": "^7.1.9",
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "wait-on": "^8.0.1",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
